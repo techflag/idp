@@ -1,0 +1,62 @@
+name: Edition Policy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - jc
+
+jobs:
+  community:
+    name: Community Matrix
+    runs-on: ubuntu-latest
+    env:
+      IDP_EDITION: community
+      DATABASE_URL: ""
+      MINERU_TOKEN: ""
+      DASHSCOPE_API_KEY: ""
+      RUNTIME_DATA_DIR: /tmp/idp-community-runtime
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Edition guardrail agent
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python scripts/edition_guardrail_agent.py --require-decision-for-changes --base "origin/${{ github.base_ref }}" --head HEAD
+          else
+            python scripts/edition_guardrail_agent.py
+          fi
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run community backend tests
+        working-directory: backend
+        run: pytest tests/test_config.py tests/test_edition_policy.py -q
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build

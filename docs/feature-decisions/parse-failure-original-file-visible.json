@@ -1,0 +1,56 @@
+{
+  "id": "FD-2026-06-21-PARSE-FAILURE-ORIGINAL-FILE-VISIBLE",
+  "featureName": "解析失败态下保留原始上传文件预览并支持重试解析",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "limited",
+    "behavior": "社区版在未配置 MinerU Token 时允许上传文件并创建任务，解析状态明确失败为 not_configured，原始 PDF 或图片仍可预览，不进入长期 pending，也不要求用户重新上传；配置 MinerU Token 后可对已有任务重新发起解析。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版可通过托管 OCR、队列或长文档解析 provider 完成完整解析；即使 provider 或队列失败，也必须保留原始上传文件可见，并展示可重试状态，重试继续复用同一份上传文件。"
+  },
+  "capabilityKeys": [
+    "document.parse"
+  ],
+  "providers": [
+    {
+      "key": "mineru",
+      "configurationState": "not_configured",
+      "noConfigurationBehavior": "提示用户前往 https://mineru.net/?source=github 申请并配置 MINERU_TOKEN；上传结果保留，解析结果为空。"
+    },
+    {
+      "key": "storage.local",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "未配置 OSS 时使用本地对象存储，确保原始上传文件仍可从后端读取。"
+    }
+  ],
+  "noConfigurationBehavior": "缺少解析 provider 配置时，上传和原文件预览可用；OCR、文档树和结构化内容不可用，并以 failed/not_configured 结束。无需重复上传。",
+  "frontendEntryControl": "前端不判断 community/commercial，只根据 parseStatus、document.pdfUrl 和 provider 配置状态展示。解析 failed 时仍渲染 DocumentReviewWorkspace，左侧显示原文，数据列显示识别未生成内容和配置提示，并提供重新识别当前文件按钮复用已有 task/document。",
+  "backendPolicy": "upload_and_parse 先保存文件、document、task，再启动解析；配置缺失标记 parse_job failed/not_configured。parse poll 对已失败且未提交 provider 的任务返回当前状态，不抛 502。start_parse 允许 failed/not_configured 的已有任务在 provider 配置后重新提交解析。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "无 MinerU Token，上传 PDF",
+      "noConfiguration": true,
+      "expected": "返回 document/task，parseState=failed，mineruState=not_configured，原文件 URL 可预览；重新识别当前文件按钮可再次调用 start_parse，缺配置时显示配置提示。"
+    },
+    {
+      "edition": "community",
+      "scenario": "已配置 MinerU Token，上传并提交解析",
+      "noConfiguration": false,
+      "expected": "沿用正常 provider 提交流程，poll pending/running/completed 状态不回退。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业解析 provider 或长文档队列失败",
+      "noConfiguration": false,
+      "expected": "商业私有 provider 可返回失败或可重试状态，但共享 core 必须保留原始文件可见。"
+    }
+  ],
+  "dataIntegrity": "不得删除原始文件、OCR artifact、表格、文档树或证据；本修复只改变失败态展示和 poll 语义，不把社区限制作为删除事实的理由。",
+  "implementationBoundary": "共享 core 只保证上传、状态、原文预览和配置失败语义；商业完整长文档解析、队列恢复和审计仍属于私有 provider/extension。",
+  "coreReuse": "shared_core"
+}

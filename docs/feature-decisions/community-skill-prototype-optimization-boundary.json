@@ -1,0 +1,53 @@
+{
+  "id": "FD-2026-06-21-COMMUNITY-SKILL-PROTOTYPE-OPTIMIZATION-BOUNDARY",
+  "featureName": "社区版不支持抽取反推 Skill / SkillOpt",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "unavailable",
+    "executionMode": "stub_only",
+    "behavior": "社区版保留 API 契约和 capability 声明，但不发布抽取反推 Skill、候选生成、训练评测、SkillNet、发布门禁和私有回归数据实现。访问相关执行入口时返回明确不可用或空列表，不启动后台任务，不进入 pending。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "executionMode": "full_skill_optimization",
+    "behavior": "商业版或内部版本可通过私有实现提供样本反推 Skill、候选生成、训练评测、SkillNet、发布门禁和回归门控能力。"
+  },
+  "capabilityKeys": [
+    "skill.prototypeOptimization"
+  ],
+  "providers": [
+    {
+      "key": "llm.dashscope",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "社区版不启动该能力；商业版未配置模型提供方时必须明确失败，不得启动长期 pending 的候选优化任务。"
+    }
+  ],
+  "noConfigurationBehavior": "社区版不依赖任何 provider 即可启动，但 skill.prototypeOptimization 始终 unavailable。商业版缺少模型 provider 时返回配置错误，不创建候选优化后台任务。",
+  "frontendEntryControl": "前端可保持现有路由和入口框架，但必须以 capability 返回结果决定是否展示或禁用抽取反推 Skill 入口；后端社区导出物不依赖前端隐藏来保护能力边界。",
+  "backendPolicy": "API route 和 schema 可以作为 shared-api-contract 保留；社区 GitHub 导出必须用 service stub 覆盖 SkillPrototypeService 和 SkillPrototypeJobService，并排除完整 SkillOpt、SkillNet、训练评测、发布门禁和私有回归实现。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "社区版无 provider 配置启动",
+      "noConfiguration": true,
+      "expected": "skill.prototypeOptimization 为 unavailable、executionMode 为 stub_only、implementation 为 public_stub；相关执行入口不创建后台任务，不进入 pending。"
+    },
+    {
+      "edition": "community",
+      "scenario": "社区版导出 GitHub snapshot",
+      "noConfiguration": false,
+      "expected": "导出目录保留 skill_prototypes API 契约，但 SkillPrototypeService 和 SkillPrototypeJobService 为社区 stub；SkillOpt、SkillNet、训练评测、发布门禁完整实现文件不存在。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业版配置模型 provider 后",
+      "noConfiguration": false,
+      "expected": "skill.prototypeOptimization 为 full，商业私有实现可执行候选生成、训练评测和发布门禁。"
+    }
+  ],
+  "dataIntegrity": "不删除原始上传、OCR、表格、文档树、证据、样例或运行结果；社区边界只控制抽取反推 Skill / SkillOpt 能力是否发布和执行。",
+  "implementationBoundary": "共享 API contract 可以保留；社区仓库只包含 public_stub；完整 SkillPrototypeService、SkillPrototypeJobService、SkillOpt adapter、SkillNet、训练评测、发布门禁和私有回归数据属于商业实现，必须标注 commercial-only 并从 GitHub 导出物中排除。",
+  "coreReuse": "private_extension"
+}

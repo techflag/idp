@@ -1,0 +1,52 @@
+{
+  "id": "FD-2026-06-21-SAMPLE-EXTRACTION-SELECTED-EVIDENCE-CONTRACT",
+  "featureName": "样例抽取遵守已定位证据范围",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "社区版基础 AI 抽取在文档树或选区已定位后，只基于 selected source/contentRefs 对应证据试抽取；缺少 LLM 配置时继续返回配置提示，不进入 pending。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版完整应用制作和长文档抽取同样遵守 selected evidence contract；后续可通过私有 evidence index 做更强的跨页扩展，但不得把同页无关模块默认混入已定位样例。"
+  },
+  "capabilityKeys": [
+    "llm.extract",
+    "application.authoring"
+  ],
+  "providers": [
+    {
+      "key": "llm.dashscope",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "缺少 LLM Key 时提示 BYO Model 配置，不发起真实样例抽取。"
+    }
+  ],
+  "noConfigurationBehavior": "无 LLM 配置时不改变既有启动和浏览体验；样例抽取返回明确配置错误，不进入 pending。",
+  "frontendEntryControl": "前端可以保持现有入口；后端以 sourceText/contentRefs 作为样例证据范围契约，定位到什么就抽取什么。",
+  "backendPolicy": "sample-extract-from-sample 在存在 contentRefs/treeNodeId/sourceText 时优先使用已定位证据，不追加同页 OCR 片段；输出结构推断只参考用户明确输出要求和已定位证据形态，不参考系统生成要求里的泛化说明。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "文档树定位到文本模块且同页存在无关表格",
+      "noConfiguration": true,
+      "expected": "无 LLM 配置时可完成证据构建诊断；样例文本只包含定位模块内容，不混入同页表格或列表。"
+    },
+    {
+      "edition": "community",
+      "scenario": "文档树定位到文本模块后配置 LLM 试抽取",
+      "noConfiguration": false,
+      "expected": "模型输入只包含 selected source；输出不得来自同页无关 OCR 块。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业版应用制作使用文档树定位样例",
+      "noConfiguration": false,
+      "expected": "完整应用制作继续可用；样例抽取和 runtime evidence 均优先遵守 selected evidence contract。"
+    }
+  ],
+  "dataIntegrity": "不删除原始 OCR、表格、文档树、证据或 artifact；修复只改变模型输入证据选择，完整事实仍保留供复核和后续扩展。",
+  "implementationBoundary": "共享 core 修复样例证据契约和输出结构推断；商业私有长文档扩展可以在 selected evidence contract 之上做受控扩展，但不能复制一套业务代码。",
+  "coreReuse": "shared_core"
+}
