@@ -57,15 +57,19 @@ When an extraction target becomes repeatable, you can save it as a basic documen
 
 ## Screenshots
 
-The current images are public-safe placeholders. Replace them with real screenshots from a clean community demo environment when publishing your own fork.
+These screenshots show the community workbench with demo data.
 
-| Login | Workspace Upload |
+| System Overview | Recognition Task |
 |---|---|
-| ![Login](docs/assets/screenshots/01-login.png) | ![Workspace upload](docs/assets/screenshots/02-workspace-upload.png) |
+| ![System overview](docs/assets/screenshots/01-system-overview.png) | ![Recognition task](docs/assets/screenshots/02-recognition-task.png) |
 
-| Document Review | AI Extraction Result |
+| Document Tree | Precise Location |
 |---|---|
-| ![Document review and tree](docs/assets/screenshots/03-document-review-tree.png) | ![AI extraction result](docs/assets/screenshots/04-ai-extraction-result.png) |
+| ![Document tree](docs/assets/screenshots/03-document-tree.png) | ![Precise location](docs/assets/screenshots/04-precise-location.png) |
+
+| Data Extraction |
+|---|
+| ![Data extraction](docs/assets/screenshots/05-data-extraction.png) |
 
 ## Quick Start
 

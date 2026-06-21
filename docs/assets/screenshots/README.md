@@ -1,9 +1,8 @@
 # Public Screenshot Rules
 
 Screenshots in this directory are used by the public GitHub/Gitee README files.
-The current PNG files are public-safe placeholder preview images. Replace them
-with real screenshots using the same filenames when the final community demo
-environment is ready.
+The current PNG files are product screenshots captured from a demo workflow.
+Replace them with the same filenames when refreshing public release images.
 
 Use real product screenshots only when they are captured from a clean community
 edition instance with sanitized demo data. Do not capture screenshots from a
