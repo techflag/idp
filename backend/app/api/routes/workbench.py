@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, Response, status
 
-from app.api.dependencies import ensure_customer_access, get_current_user, get_repository, get_runtime_store
+from app.api.dependencies import ensure_customer_access, get_current_user, get_oss_service, get_repository, get_runtime_store
 from app.api.route_metrics import log_response_metric, metric_start
 from app.repositories.protocols import WorkbenchRepository
 from app.schemas.workbench import (
@@ -20,9 +20,11 @@ from app.schemas.workbench import (
 from app.services.auth import SessionUser
 from app.services.document_tree_artifacts import (
     build_document_tree_from_raw_artifact,
+    ensure_document_tree_artifacts_mirrored,
     load_document_tree,
     write_document_tree_error,
 )
+from app.services.oss import OssStorageService
 from app.services.runtime_store import JsonRuntimeStore
 
 router = APIRouter(prefix="/workbench", tags=["workbench"])
@@ -67,13 +69,20 @@ def get_workbench_task_detail(
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
     runtime_store: JsonRuntimeStore = Depends(get_runtime_store),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> WorkbenchTaskDetail:
     started_at = metric_start()
     task = repository.get_task_record(taskId)
     ensure_customer_access(task.customerId, current_user)
     detail = repository.get_task_detail(taskId, lightPromptRuns=not include_document_tree)
     if include_document_tree:
-        detail.documentTree = _load_or_build_document_tree(repository, runtime_store, taskId, detail.document.id)
+        detail.documentTree = _load_or_build_document_tree(
+            repository,
+            runtime_store,
+            taskId,
+            detail.document.id,
+            oss_service,
+        )
     log_response_metric(
         "workbench_task_detail",
         started_at=started_at,
@@ -94,11 +103,12 @@ def get_workbench_task_document_tree(
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
     runtime_store: JsonRuntimeStore = Depends(get_runtime_store),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> WorkbenchDocumentTree | None:
     started_at = metric_start()
     task = repository.get_task_record(taskId)
     ensure_customer_access(task.customerId, current_user)
-    tree = _load_or_build_document_tree(repository, runtime_store, taskId, task.documentId)
+    tree = _load_or_build_document_tree(repository, runtime_store, taskId, task.documentId, oss_service)
     log_response_metric(
         "workbench_document_tree",
         started_at=started_at,
@@ -166,9 +176,11 @@ def _load_or_build_document_tree(
     runtime_store: JsonRuntimeStore,
     task_id: str,
     document_id: str,
+    oss_service: OssStorageService,
 ) -> WorkbenchDocumentTree | None:
-    existing = load_document_tree(runtime_store, task_id, document_id)
+    existing = load_document_tree(runtime_store, task_id, document_id, oss_service=oss_service)
     if existing is not None:
+        ensure_document_tree_artifacts_mirrored(runtime_store, task_id, oss_service=oss_service)
         return existing
 
     raw_json_path = _resolve_raw_json_path(repository, runtime_store, task_id)
@@ -176,13 +188,18 @@ def _load_or_build_document_tree(
         return None
 
     try:
-        artifact_paths = build_document_tree_from_raw_artifact(runtime_store, task_id, raw_json_path)
+        artifact_paths = build_document_tree_from_raw_artifact(
+            runtime_store,
+            task_id,
+            raw_json_path,
+            oss_service=oss_service,
+        )
         logger.info("document tree built on workbench load taskId=%s treePath=%s", task_id, artifact_paths.get("treePath"))
     except Exception as exc:  # pragma: no cover - defensive guard for optional workbench enrichment
         logger.exception("document tree lazy build failed taskId=%s", task_id)
-        write_document_tree_error(runtime_store, task_id, exc)
+        write_document_tree_error(runtime_store, task_id, exc, oss_service=oss_service)
         return None
-    return load_document_tree(runtime_store, task_id, document_id)
+    return load_document_tree(runtime_store, task_id, document_id, oss_service=oss_service)
 
 
 def _resolve_raw_json_path(

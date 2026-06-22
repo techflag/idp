@@ -17,6 +17,7 @@ from app.services.skill_loader import (
     extract_markdown_rules,
     parse_skill_markdown,
 )
+from app.services.oss import OssStorageService
 from app.services.skill_text_store import (
     build_skill_text_asset,
     read_skill_text_asset,
@@ -88,9 +89,16 @@ class ExtractionSkillRecord:
 
 
 class ExtractionSkillRegistry:
-    def __init__(self, *, repository: WorkbenchRepository, settings: AppSettings) -> None:
+    def __init__(
+        self,
+        *,
+        repository: WorkbenchRepository,
+        settings: AppSettings,
+        oss_service: OssStorageService | None = None,
+    ) -> None:
         self._repository = repository
         self._settings = settings
+        self._oss_service = oss_service
 
     def list_skills(self, *, customer_id: str | None = None, include_inactive: bool = False) -> list[ExtractionSkillDetail]:
         records_by_id: dict[str, ExtractionSkillRecord] = {}
@@ -262,7 +270,7 @@ class ExtractionSkillRegistry:
             return record
         try:
             asset = upload_skill_text_asset(
-                settings=self._settings,
+                storage=self._oss_service,
                 customer_id=record.customerId,
                 kind="extraction",
                 skill_id=record.id,
@@ -289,7 +297,7 @@ class ExtractionSkillRegistry:
             return record
         if record.skillTextObjectKey:
             try:
-                return replace(record, skillText=read_skill_text_asset(settings=self._settings, object_key=record.skillTextObjectKey))
+                return replace(record, skillText=read_skill_text_asset(storage=self._oss_service, object_key=record.skillTextObjectKey))
             except RuntimeError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

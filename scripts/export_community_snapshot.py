@@ -46,6 +46,7 @@ COPY_FILES = [
     "frontend/vite.config.ts",
     "scripts/check_edition_policy.py",
     "scripts/check_feature_decisions.py",
+    "scripts/audit_commercial_boundary.py",
     "scripts/edition_guardrail_agent.py",
     "scripts/export_community_snapshot.py",
     "scripts/check_public_export.py",

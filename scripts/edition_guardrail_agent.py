@@ -79,6 +79,7 @@ def build_checks(args: argparse.Namespace) -> list[Check]:
     checks = [
         Check("Edition policy static check", [python, "scripts/check_edition_policy.py"]),
         Check("Feature Decision registry check", feature_decision_command),
+        Check("Commercial boundary audit", [python, "scripts/audit_commercial_boundary.py"]),
     ]
 
     if args.community_export:

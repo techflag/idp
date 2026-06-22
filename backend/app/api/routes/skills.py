@@ -19,6 +19,7 @@ from app.api.dependencies import (
     get_business_skill_registry,
     get_current_user,
     get_extraction_skill_registry,
+    get_oss_service,
     get_repository,
     get_prompt_llm_service,
     get_prompt_pipeline_service,
@@ -58,7 +59,7 @@ from app.services.document_tree_artifacts import load_document_tree
 from app.services.document_tree_scope import expand_document_tree_modules
 from app.services.extraction_skills import ExtractionSkillRegistry
 from app.services.llm import PromptLlmService, _build_ssl_context
-from app.services.oss import OssStorageService, build_oss_storage_service
+from app.services.oss import OssStorageService
 from app.services.prompt_pipeline import (
     _attach_skill_metadata_to_output,
     _build_extraction_run_meta,
@@ -456,12 +457,13 @@ def _hydrate_document_tree_sample_source(
     repository: WorkbenchRepository,
     runtime_store: JsonRuntimeStore | None,
     payload: SkillDraftFromSampleRequest,
+    oss_service: OssStorageService | None = None,
     trace: dict[str, Any] | None = None,
 ) -> SkillDraftFromSampleRequest:
     if not (payload.treeNodeId or _content_refs_include_document_tree_modules(payload.contentRefs)):
         return payload
 
-    document_tree, source = _load_sample_document_tree(repository, runtime_store, payload)
+    document_tree, source = _load_sample_document_tree(repository, runtime_store, payload, oss_service=oss_service)
     if document_tree is None or not getattr(document_tree, "modules", None):
         if trace is not None:
             trace["sampleSourceHydration"] = {
@@ -513,6 +515,8 @@ def _load_sample_document_tree(
     repository: WorkbenchRepository,
     runtime_store: JsonRuntimeStore | None,
     payload: SkillDraftFromSampleRequest,
+    *,
+    oss_service: OssStorageService | None = None,
 ) -> tuple[Any | None, str]:
     context_tree = _sample_context_document_tree(payload)
     if context_tree is not None and getattr(context_tree, "modules", None):
@@ -525,7 +529,15 @@ def _load_sample_document_tree(
     task = repository.get_task_record(task_id)
     document_id = str(getattr(task, "documentId", "") or "").strip()
     document = repository.get_document_record(document_id)
-    return load_document_tree(runtime_store, task_id, document.id), "runtime_store"
+    return (
+        load_document_tree(
+            runtime_store,
+            task_id,
+            document.id,
+            oss_service=oss_service,
+        ),
+        "runtime_store",
+    )
 
 
 def _sample_document_tree_module_ids(payload: SkillDraftFromSampleRequest) -> list[str]:
@@ -801,6 +813,7 @@ def sample_extract_from_sample(
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
     runtime_store: JsonRuntimeStore = Depends(get_runtime_store),
+    oss_service: OssStorageService = Depends(get_oss_service),
     prompt_pipeline: PromptPipelineService = Depends(get_prompt_pipeline_service),
 ) -> SkillSampleExtractFromSampleResponse:
     if payload.kind != "extraction":
@@ -819,6 +832,7 @@ def sample_extract_from_sample(
             customer_id=customer_id,
             repository=repository,
             runtime_store=runtime_store,
+            oss_service=oss_service,
             prompt_pipeline=prompt_pipeline,
             started_at=started_at,
             trace=trace,
@@ -853,6 +867,7 @@ def sample_locate_and_extract(
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
     runtime_store: JsonRuntimeStore = Depends(get_runtime_store),
+    oss_service: OssStorageService = Depends(get_oss_service),
     prompt_pipeline: PromptPipelineService = Depends(get_prompt_pipeline_service),
     semantic_locator_reranker: SemanticLocatorReranker | None = Depends(get_semantic_locator_reranker),
 ) -> SkillSampleLocateAndExtractResponse:
@@ -860,7 +875,12 @@ def sample_locate_and_extract(
     sample_id = _sample_identity(payload)
     if task is not None:
         document = repository.get_document_record(task.documentId)
-        document_tree = load_document_tree(runtime_store, task.id, document.id)
+        document_tree = load_document_tree(
+            runtime_store,
+            task.id,
+            document.id,
+            oss_service=oss_service,
+        )
         document_id = document.id
         pages = []
     else:
@@ -1131,6 +1151,7 @@ def sample_locate_and_extract(
             customer_id=customer_id,
             repository=repository,
             runtime_store=runtime_store,
+            oss_service=oss_service,
             prompt_pipeline=prompt_pipeline,
             started_at=started_at,
             trace=trace,
@@ -1201,11 +1222,13 @@ def _run_sample_extraction_from_payload(
     runtime_store: JsonRuntimeStore | None,
     prompt_pipeline: PromptPipelineService,
     started_at: float,
+    oss_service: OssStorageService | None = None,
     trace: dict[str, Any] | None = None,
 ) -> SkillSampleExtractFromSampleResponse:
     payload = _hydrate_document_tree_sample_source(
         repository=repository,
         runtime_store=runtime_store,
+        oss_service=oss_service,
         payload=payload,
         trace=trace,
     )
@@ -2466,11 +2489,12 @@ def list_skill_samples(
     includeContent: bool = Query(False),
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> list[SkillSampleResponse]:
     if customerId:
         ensure_customer_access(customerId, current_user)
     records = repository.list_skill_samples(kind=kind, skillId=skillId, customerId=customerId, limit=20)
-    return [_skill_sample_response(record, include_content=includeContent) for record in records]
+    return [_skill_sample_response(record, include_content=includeContent, oss_service=oss_service) for record in records]
 
 
 @router.post("/skills/{skillId}/samples", response_model=SkillSampleResponse)
@@ -2479,6 +2503,7 @@ def save_skill_sample(
     payload: SkillSampleUpsertRequest,
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> SkillSampleResponse:
     customer_id = payload.customerId or _default_customer_id(current_user)
     ensure_customer_access(customer_id, current_user)
@@ -2486,8 +2511,7 @@ def save_skill_sample(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="路径中的 skillId 与样本 skillId 不一致。")
     data = payload.content.encode("utf-8")
     preview = _sample_excerpt(payload.content, limit=2000)
-    storage = _build_oss_storage()
-    uploaded = storage.upload_file(
+    uploaded = oss_service.upload_file(
         customerId=customer_id,
         fileName=payload.fileName or "skill-sample.txt",
         contentType=payload.contentType or "text/plain; charset=utf-8",
@@ -2510,7 +2534,7 @@ def save_skill_sample(
         updatedAt=now,
     )
     saved = repository.save_skill_sample(record)
-    return _skill_sample_response(saved, content=payload.content)
+    return _skill_sample_response(saved, content=payload.content, oss_service=oss_service)
 
 
 @router.get("/skills/{skillId}/test-runs", response_model=list[SkillTestRunSummary])
@@ -2535,13 +2559,14 @@ def get_skill_test_run_detail(
     customerId: Optional[str] = Query(None),
     current_user: SessionUser = Depends(get_current_user),
     repository: WorkbenchRepository = Depends(get_repository),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> SkillTestRunSummary:
     if customerId:
         ensure_customer_access(customerId, current_user)
     records = repository.list_skill_test_runs(kind=kind, skillId=skillId, customerId=customerId, limit=100)
     for record in records:
         if record.id == runId:
-            return _skill_test_run_response(record, include_payload=True)
+            return _skill_test_run_response(record, include_payload=True, oss_service=oss_service)
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill test run not found")
 
 
@@ -2662,6 +2687,7 @@ def test_run_skill(
     llm_service: PromptLlmService = Depends(get_prompt_llm_service),
     prompt_pipeline: PromptPipelineService = Depends(get_prompt_pipeline_service),
     repository: WorkbenchRepository = Depends(get_repository),
+    oss_service: OssStorageService = Depends(get_oss_service),
 ) -> SkillTestRunResponse:
     if payload.customerId:
         ensure_customer_access(payload.customerId, current_user)
@@ -2671,7 +2697,7 @@ def test_run_skill(
             business_registry=business_registry,
             llm_service=llm_service,
         )
-        _persist_skill_test_run_if_requested(payload, response, repository)
+        _persist_skill_test_run_if_requested(payload, response, repository, oss_service)
         return response
     try:
         skill = extraction_registry.parse_markdown(payload.skillText, customer_id=payload.customerId)
@@ -2713,7 +2739,7 @@ def test_run_skill(
             inputChars=int(runtime_result.run_meta.get("inputChars") or 0),
             outputChars=int(runtime_result.run_meta.get("outputChars") or 0),
         )
-        _persist_skill_test_run_if_requested(payload, response, repository)
+        _persist_skill_test_run_if_requested(payload, response, repository, oss_service)
         return response
     except Exception as error:
         response = SkillTestRunResponse(
@@ -2721,7 +2747,7 @@ def test_run_skill(
             errors=[str(error)],
             facts=_safe_build_test_facts(payload.sampleText),
         )
-        _persist_skill_test_run_if_requested(payload, response, repository)
+        _persist_skill_test_run_if_requested(payload, response, repository, oss_service)
         return response
 
 
@@ -4798,26 +4824,17 @@ def _unique_copy_id(source_id: str) -> str:
     return f"{clean}_copy_{suffix}"
 
 
-def _build_oss_storage() -> OssStorageService:
-    try:
-        return build_oss_storage_service(get_settings())
-    except RuntimeError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"对象存储不可用，无法保存 Skill 资产：{error}",
-        ) from error
-
-
 def _skill_sample_response(
     record: SkillSampleRecord,
     *,
     include_content: bool = False,
     content: Optional[str] = None,
+    oss_service: OssStorageService | None = None,
 ) -> SkillSampleResponse:
     body = content
-    if include_content and body is None:
+    if include_content and body is None and oss_service is not None:
         try:
-            body = _build_oss_storage().read_text_object(objectKey=record.objectKey)
+            body = oss_service.read_text_object(objectKey=record.objectKey)
         except Exception:
             body = None
     return SkillSampleResponse(
@@ -4838,15 +4855,20 @@ def _skill_sample_response(
     )
 
 
-def _skill_test_run_response(record: SkillTestRunRecord, *, include_payload: bool = False) -> SkillTestRunSummary:
+def _skill_test_run_response(
+    record: SkillTestRunRecord,
+    *,
+    include_payload: bool = False,
+    oss_service: OssStorageService | None = None,
+) -> SkillTestRunSummary:
     result_payload = record.result
     facts_payload = record.facts
-    if record.resultObjectKey and include_payload:
-        result_payload = _read_json_asset(record.resultObjectKey, label="Skill 测试输出")
+    if record.resultObjectKey and include_payload and oss_service is not None:
+        result_payload = _read_json_asset(record.resultObjectKey, label="Skill 测试输出", oss_service=oss_service)
     elif not include_payload:
         result_payload = record.summary or record.result
-    if record.factsObjectKey and include_payload:
-        facts_payload = _read_json_asset(record.factsObjectKey, label="Skill 测试输入事实")
+    if record.factsObjectKey and include_payload and oss_service is not None:
+        facts_payload = _read_json_asset(record.factsObjectKey, label="Skill 测试输入事实", oss_service=oss_service)
     elif not include_payload:
         facts_payload = None
     return SkillTestRunSummary(
@@ -4880,6 +4902,7 @@ def _persist_skill_test_run_if_requested(
     payload: SkillTestRunRequest,
     response: SkillTestRunResponse,
     repository: WorkbenchRepository,
+    oss_service: OssStorageService,
 ) -> None:
     if not payload.persist:
         return
@@ -4905,6 +4928,7 @@ def _persist_skill_test_run_if_requested(
         "sampleId": payload.sampleId,
     }
     input_object_key = _write_skill_test_asset(
+        oss_service=oss_service,
         kind=payload.kind,
         customer_id=payload.customerId,
         skill_id=skill_id,
@@ -4914,6 +4938,7 @@ def _persist_skill_test_run_if_requested(
         payload=input_payload,
     )
     result_object_key = _write_skill_test_asset(
+        oss_service=oss_service,
         kind=payload.kind,
         customer_id=payload.customerId,
         skill_id=skill_id,
@@ -4923,6 +4948,7 @@ def _persist_skill_test_run_if_requested(
         payload=result_payload or {},
     )
     facts_object_key = _write_skill_test_asset(
+        oss_service=oss_service,
         kind=payload.kind,
         customer_id=payload.customerId,
         skill_id=skill_id,
@@ -4963,6 +4989,7 @@ def _persist_skill_test_run_if_requested(
 
 def _write_skill_test_asset(
     *,
+    oss_service: OssStorageService,
     kind: str,
     customer_id: Optional[str],
     skill_id: str,
@@ -4984,7 +5011,7 @@ def _write_skill_test_asset(
             f"{_safe_object_segment(name)}.json",
         ]
     )
-    _build_oss_storage().write_text_object(
+    oss_service.write_text_object(
         objectKey=object_key,
         content=json.dumps(payload or {}, ensure_ascii=False, indent=2),
         contentType="application/json; charset=utf-8",
@@ -4996,9 +5023,9 @@ def _safe_object_segment(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9._=-]+", "-", str(value or "").strip()).strip("-") or "asset"
 
 
-def _read_json_asset(object_key: str, *, label: str) -> dict[str, Any]:
+def _read_json_asset(object_key: str, *, label: str, oss_service: OssStorageService) -> dict[str, Any]:
     try:
-        text = _build_oss_storage().read_text_object(objectKey=object_key, maxBytes=20_000_000)
+        text = oss_service.read_text_object(objectKey=object_key, maxBytes=20_000_000)
         parsed = json.loads(text or "{}")
     except Exception as error:
         raise HTTPException(

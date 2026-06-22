@@ -47,6 +47,7 @@ EDITION_ALLOWED = {
     Path("frontend/src/stores/capabilities.ts"),
     Path("scripts/check_edition_policy.py"),
     Path("scripts/check_feature_decisions.py"),
+    Path("scripts/audit_commercial_boundary.py"),
     Path("scripts/edition_guardrail_agent.py"),
     Path("scripts/export_community_snapshot.py"),
     Path("scripts/publish_github_community.py"),
@@ -130,6 +131,7 @@ def check_community_export_annotations(files: list[Path]) -> list[str]:
     export_script = read_text(Path("scripts/export_community_snapshot.py"))
     public_check = read_text(Path("scripts/check_public_export.py"))
     scanner_files = {
+        Path("scripts/audit_commercial_boundary.py"),
         Path("scripts/check_edition_policy.py"),
         Path("scripts/check_public_export.py"),
     }

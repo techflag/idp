@@ -25,6 +25,7 @@ from app.services.oss import OssStorageService
 from app.services.document_tree_artifacts import (
     DOCUMENT_TREE_CATEGORY,
     build_document_tree_from_raw_artifact,
+    ensure_document_tree_artifacts_mirrored,
     write_document_tree_error,
 )
 from app.services.runtime_store import JsonRuntimeStore
@@ -288,9 +289,19 @@ class ParsePipelineService:
     def _ensure_document_tree_artifacts(self, taskId: str, parse_job: ParseJobRecord) -> None:
         tree_path = self._runtime_store.resolve_artifact_path(taskId, f"{DOCUMENT_TREE_CATEGORY}/tree.json")
         if tree_path.exists():
+            ensure_document_tree_artifacts_mirrored(
+                self._runtime_store,
+                taskId,
+                oss_service=self._oss_service,
+            )
             return
         try:
-            artifact_paths = build_document_tree_from_raw_artifact(self._runtime_store, taskId, parse_job.rawJsonPath)
+            artifact_paths = build_document_tree_from_raw_artifact(
+                self._runtime_store,
+                taskId,
+                parse_job.rawJsonPath,
+                oss_service=self._oss_service,
+            )
             logger.info(
                 "document tree built taskId=%s treePath=%s",
                 taskId,
@@ -298,7 +309,7 @@ class ParsePipelineService:
             )
         except Exception as exc:  # pragma: no cover - defensive guard around optional artifact generation
             logger.exception("document tree build failed taskId=%s", taskId)
-            write_document_tree_error(self._runtime_store, taskId, exc)
+            write_document_tree_error(self._runtime_store, taskId, exc, oss_service=self._oss_service)
 
     def _build_artifact_urls(self, taskId: str, job: ParseJobRecord) -> dict[str, str | None]:
         artifact_base_url = f"{self._settings.api_prefix}/tasks/{taskId}/artifacts"

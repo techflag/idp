@@ -127,6 +127,10 @@ The agent currently verifies:
 
 - Edition references stay in policy/capability/provider layers.
 - Feature Decision JSON files are complete and use registered capability keys.
+- Commercial-looking implementation files are explicitly annotated, excluded from
+  sanitized community export, and blocked by public export checks.
+- Community overlay stubs exist for application and SkillOpt-style commercial
+  boundaries.
 - The community export passes public boundary checks.
 - The community backend no-config tests pass.
 - The exported community frontend builds.

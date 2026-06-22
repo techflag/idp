@@ -2871,7 +2871,11 @@ class PromptPipelineService:
             raise RuntimeError("当前页不存在，无法执行解析 skill。")
 
         task = self._repository.get_task_record(taskId)
-        registry = ExtractionSkillRegistry(repository=self._repository, settings=self._settings)
+        registry = ExtractionSkillRegistry(
+            repository=self._repository,
+            settings=self._settings,
+            oss_service=self._oss_service,
+        )
         skill = registry.resolve_skill(
             skill_id=payload.skillId,
             customer_id=task.customerId,
@@ -2994,7 +2998,11 @@ class PromptPipelineService:
             raise RuntimeError("当前页不存在，无法执行业务 skill。")
 
         task = self._repository.get_task_record(taskId)
-        registry = BusinessSkillRegistry(repository=self._repository, settings=self._settings)
+        registry = BusinessSkillRegistry(
+            repository=self._repository,
+            settings=self._settings,
+            oss_service=self._oss_service,
+        )
         skill = registry.resolve_skill(
             skill_id=payload.skillId,
             customer_id=task.customerId,

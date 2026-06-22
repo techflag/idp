@@ -80,19 +80,23 @@ def get_prompt_pipeline_service() -> PromptPipelineService:
     )
 
 
-@lru_cache(maxsize=1)
-def get_business_skill_registry() -> BusinessSkillRegistry:
+def get_business_skill_registry(
+    oss_service: OssStorageService = Depends(get_oss_service),
+) -> BusinessSkillRegistry:
     return BusinessSkillRegistry(
         repository=get_repository(),
         settings=get_settings(),
+        oss_service=oss_service,
     )
 
 
-@lru_cache(maxsize=1)
-def get_extraction_skill_registry() -> ExtractionSkillRegistry:
+def get_extraction_skill_registry(
+    oss_service: OssStorageService = Depends(get_oss_service),
+) -> ExtractionSkillRegistry:
     return ExtractionSkillRegistry(
         repository=get_repository(),
         settings=get_settings(),
+        oss_service=oss_service,
     )
 
 

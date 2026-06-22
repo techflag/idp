@@ -6,8 +6,7 @@ from dataclasses import dataclass
 import hashlib
 import re
 
-from app.core.config import AppSettings
-from app.services.oss import build_oss_storage_service
+from app.services.oss import OssStorageService
 
 
 @dataclass(frozen=True)
@@ -30,15 +29,16 @@ def build_skill_text_asset(*, skill_text: str, object_key: str = "") -> SkillTex
 
 def upload_skill_text_asset(
     *,
-    settings: AppSettings,
+    storage: OssStorageService | None,
     customer_id: str | None,
     kind: str,
     skill_id: str,
     version: str,
     skill_text: str,
 ) -> SkillTextAsset:
+    if storage is None:
+        raise RuntimeError("OSS storage service is not configured")
     local_asset = build_skill_text_asset(skill_text=skill_text)
-    storage = build_oss_storage_service(settings)
     uploaded = storage.upload_file(
         customerId=customer_id or "platform",
         fileName=f"{kind}-{skill_id}-{version}.SKILL.md",
@@ -53,8 +53,10 @@ def upload_skill_text_asset(
     )
 
 
-def read_skill_text_asset(*, settings: AppSettings, object_key: str) -> str:
-    return build_oss_storage_service(settings).read_text_object(objectKey=object_key)
+def read_skill_text_asset(*, storage: OssStorageService | None, object_key: str) -> str:
+    if storage is None:
+        raise RuntimeError("OSS storage service is not configured")
+    return storage.read_text_object(objectKey=object_key)
 
 
 def strip_stored_skill_text(defaults: dict[str, object] | None) -> dict[str, object]:
