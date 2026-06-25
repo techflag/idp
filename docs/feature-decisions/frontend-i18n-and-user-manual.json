@@ -1,0 +1,53 @@
+{
+  "id": "FD-2026-06-21-FRONTEND-I18N-AND-USER-MANUAL",
+  "featureName": "前端中英文国际化与 GitHub 使用手册",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "社区版提供中英文前端静态文案、语言切换和 GitHub 英中使用手册；不翻译用户上传文档、OCR、Skill Markdown 或后端业务数据。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版复用同一套前端 i18n 基础设施，可在私有扩展中继续补充企业功能文案和更多语言。"
+  },
+  "capabilityKeys": [
+    "document.parse",
+    "llm.extract",
+    "application.authoring"
+  ],
+  "providers": [
+    {
+      "key": "frontend.i18n",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "未配置 VITE_DEFAULT_LOCALE 时使用浏览器语言，无法识别时默认 zh-CN。"
+    }
+  ],
+  "noConfigurationBehavior": "不需要后端密钥或数据库迁移；语言切换只影响前端静态文案显示。",
+  "frontendEntryControl": "全局 Header 提供中文/EN 切换，语言写入 localStorage key idp.locale。",
+  "backendPolicy": "不改后端 API、不翻译后端返回业务数据、不影响 provider 配置和运行能力判断。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "zh_cn_en",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "浏览器语言为英文首次打开社区版",
+      "noConfiguration": true,
+      "expected": "前端显示英文静态文案，仍可登录和浏览基础页面；缺少 provider 时显示配置提示。"
+    },
+    {
+      "edition": "community",
+      "scenario": "切换为中文后刷新页面",
+      "noConfiguration": false,
+      "expected": "localStorage 保留 zh-CN，刷新后继续显示中文。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业版私有功能复用共享 i18n",
+      "noConfiguration": false,
+      "expected": "商业扩展可以继续追加私有文案，不复制一套前端架构。"
+    }
+  ],
+  "dataIntegrity": "不修改用户上传文件、OCR artifact、文档树、抽取结果或运行证据；仅改变前端展示文案和公开文档。",
+  "implementationBoundary": "共享 core 提供中英文基础设施和社区公开手册；商业私有页面可追加私有 locale 字典。",
+  "coreReuse": "shared_core"
+}

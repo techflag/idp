@@ -1,0 +1,46 @@
+TechFlag IDP Community Authors
+==============================
+
+Primary Author and Copyright Holder
+-----------------------------------
+
+TechFlag is the original author, copyright holder, and primary maintainer of
+TechFlag IDP Community.
+
+Copyright (C) 2026 TechFlag.
+
+Project Maintainer
+------------------
+
+- TechFlag
+
+Original Work
+-------------
+
+TechFlag created and maintains the original project architecture, including:
+
+- Backend service architecture and API contracts.
+- Document parsing, review, evidence, and extraction workflow design.
+- Community/commercial edition capability and guardrail design.
+- Vue-based workbench user interface and interaction model.
+- Document application, Skill authoring, and runtime workflow concepts.
+- Release packaging, public snapshot export, and source attribution tooling.
+- Public documentation, user manuals, release notes, and community setup flow.
+
+Contributions
+-------------
+
+Unless a separate written agreement says otherwise, contributions submitted to
+this repository are intended to be contributed under the same license as the
+project: GNU Affero General Public License v3.0 only (`AGPL-3.0-only`).
+
+Contributors retain copyright in their own contributions unless they assign it
+by written agreement. By submitting a contribution, the contributor represents
+that they have the right to contribute it under the project license.
+
+Attribution Notes
+-----------------
+
+This file identifies project authorship and contribution intent. It does not
+replace the license text in `LICENSE`, the attribution notice in `NOTICE`, or
+the trademark guidance in `TRADEMARKS.md`.

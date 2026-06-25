@@ -1,0 +1,60 @@
+{
+  "id": "FD-2026-06-21-COMMUNITY-APPLICATION-AUTHORING-BOUNDARY",
+  "featureName": "社区版文档应用 Lite 与商业完整链路边界",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "limited",
+    "executionMode": "single_page_lite_authoring_and_run",
+    "behavior": "社区版允许暴露文档应用 Lite 能力，但只允许单页 Lite 或样例级体验；完整应用工作坊、步骤管理、发布应用、应用市场使用、跨页定位、长文档运行和恢复链路不得在社区版后端执行。直接访问完整应用 API 时，后端返回明确 403 或社区 stub，不进入 pending。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "executionMode": "full_application_authoring_and_run",
+    "behavior": "商业版通过 application.authoring 和 application.run capability 开放完整文档应用制作、步骤编排、样板资产固化、发布、市场使用、跨页定位、应用运行和恢复链路。"
+  },
+  "capabilityKeys": [
+    "application.authoring",
+    "application.run",
+    "document.run"
+  ],
+  "providers": [
+    {
+      "key": "mineru",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "缺少 parser 配置时展示配置提示；社区版不得启动完整应用制作或运行链路。"
+    },
+    {
+      "key": "llm.dashscope",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "缺少 LLM 配置时展示配置提示；社区版不得启动完整应用制作或运行链路。"
+    }
+  ],
+  "noConfigurationBehavior": "社区版缺少 provider 配置时允许能力表返回 limited 但 enabled=false；前端可显示配置提示，后端完整应用 API 必须明确拒绝，不进入 pending。基础解析/抽取仍按 document.parse、llm.extract 的 provider 配置提示处理。",
+  "frontendEntryControl": "文档应用相关路由可继续使用 application.authoring capability；社区版前端可以暂不改，但不能依赖前端隐藏保护边界。前端后续应按 executionMode 展示 Lite 体验。",
+  "backendPolicy": "应用 API router 允许 application.authoring limited 通过基础可用性检查，但完整创建、详情、保存、发布、运行、计划和复核反馈必须要求 application.authoring/application.run 为 full。社区 GitHub 导出继续使用 applications stub，确保改参数也不能触发商业完整链路。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "配置 MinerU 和 LLM 后进入社区版后台",
+      "noConfiguration": false,
+      "expected": "document.run、application.authoring 和 application.run 可保持 limited 且 enabled；完整应用创建、详情、保存、发布、运行、计划和复核反馈 API 返回 403/stub，不进入 pending。"
+    },
+    {
+      "edition": "community",
+      "scenario": "无 provider 配置首次启动",
+      "noConfiguration": true,
+      "expected": "基础启动、登录、识别任务和基础 Skill 页面可访问；application.authoring/application.run 为 limited 但 enabled=false，完整应用 API 返回配置/边界错误，不进入 pending。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业版配置 provider 后",
+      "noConfiguration": false,
+      "expected": "application.authoring 和 application.run 为 full 且 enabled，文档应用制作、发布和运行入口可见。"
+    }
+  ],
+  "dataIntegrity": "不删除原始上传文件、OCR、表格、文档树、证据或运行结果；社区边界只控制完整应用制作/运行入口和后端链路可用性。",
+  "implementationBoundary": "共享 core 继续承载基础解析、抽取和 Skill 调试；社区版只允许 Lite/stub，完整文档应用制作、发布、市场使用、跨页运行和恢复链路属于商业 capability 或社区导出 stub，不复制两套业务代码。",
+  "coreReuse": "shared_core"
+}

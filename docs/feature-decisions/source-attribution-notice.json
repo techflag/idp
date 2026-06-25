@@ -1,0 +1,51 @@
+{
+  "id": "FD-2026-06-22-SOURCE-ATTRIBUTION-NOTICE",
+  "featureName": "源码原创归属标识与公开 NOTICE",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "社区开源快照包含与导出 LICENSE 一致的 SPDX 文件头、NOTICE、AUTHORS 和 TRADEMARKS.md；当前 GitHub 社区发布包使用 MIT 口径，用公开透明方式声明 TechFlag 原创归属。"
+  },
+  "commercial": {
+    "capabilityLevel": "basic",
+    "behavior": "商业代码同样保留标准源码归属标识，便于后续发布、审计、存证和权属证明。"
+  },
+  "capabilityKeys": [
+    "audit.compliance"
+  ],
+  "providers": [
+    {
+      "key": "release.guardrail",
+      "configurationState": "not_applicable",
+      "noConfigurationBehavior": "无需外部 provider；本地静态检查即可确认源码归属标识。"
+    }
+  ],
+  "noConfigurationBehavior": "无密钥、无网络时可执行源码归属检查，不影响系统启动和运行。",
+  "frontendEntryControl": "不新增前端入口；这是仓库治理和发布检查能力。",
+  "backendPolicy": "新增源码归属检查脚本并接入 edition guardrail；源码文件头使用与仓库 LICENSE 一致的 SPDX 标识，公开归属使用 SPDX/NOTICE/TRADEMARKS，不使用隐藏水印、暗桩或遥测。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "zh_cn_en",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "社区导出前运行源码归属检查",
+      "noConfiguration": true,
+      "expected": "backend/app、frontend/src、scripts 和 community override 下支持注释的源码文件均包含与当前仓库 LICENSE 一致的 TechFlag SPDX 文件头，公开 NOTICE 文件存在。"
+    },
+    {
+      "edition": "community",
+      "scenario": "新增无归属头源码文件",
+      "noConfiguration": true,
+      "expected": "guardrail 检查失败并提示缺少 SPDX/TechFlag source attribution header。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业开发仓库运行默认 guardrail",
+      "noConfiguration": false,
+      "expected": "商业代码保留标准归属标识，不依赖隐藏标记证明原创。"
+    }
+  ],
+  "dataIntegrity": "只修改源码注释和仓库级说明文件，不修改运行数据、数据库、文档树、OCR、证据或模型输出。",
+  "implementationBoundary": "归属标识适用于 shared core、community Lite/stub 和 commercial private extension；不得通过隐藏代码、不可见字符或遥测作为权属标识。",
+  "coreReuse": "shared_core"
+}

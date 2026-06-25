@@ -1,0 +1,59 @@
+{
+  "id": "FD-2026-06-23-SKILL-SIGNAL-DETERMINISTIC-LOCATOR",
+  "featureName": "Skill 信号驱动的确定性定位",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "社区版样例制作和基础运行使用 Skill 信号、字段 schema、样例输出和人工确认窗口进行确定性候选扫描；LLM 缺少配置时仍返回可解释候选，不进入 pending。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版完整应用运行复用同一定位画像和候选窗口协议，可在候选接近或结构冲突时启用 LLM rerank，并把人工确认候选沉淀为应用级 confirmedEvidenceHints。"
+  },
+  "capabilityKeys": [
+    "application.authoring",
+    "application.run",
+    "llm.extract"
+  ],
+  "providers": [
+    {
+      "key": "llm.dashscope",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "无 LLM 配置时只执行确定性扫描；候选不确定时返回 needs_review 和候选解释，不调用模型。"
+    }
+  ],
+  "noConfigurationBehavior": "不需要额外数据库或云服务；确定性扫描基于已有文档树、页面块、表格行和 Skill 资产完成。",
+  "frontendEntryControl": "应用制作候选列表展示 matchedTerms、matchedWindows、shapeSignals 和 uncertainties，避免直接展示 raw HTML/base64；用户仍通过现有“使用此候选”入口确认。",
+  "backendPolicy": "定位先从 locatorInstruction、positiveTerms、字段 schema、confirmedOutputShape、expectedOutput 和 confirmedEvidenceHints 派生机械信号，再扫描文档树模块、页面块、表格行和邻近窗口；不得在通用运行代码里硬编码采购单/订单/商品等业务词表。LLM 仅作为 Top N 候选 rerank 兜底，人工选择保存信号和窗口形态，不固定旧页码或旧节点 ID。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "目标表头位于表格中部，字段为 line_no/item_code/qty/unit_price/sub_total",
+      "noConfiguration": true,
+      "expected": "确定性扫描生成命中行窗口并自动选择候选，不调用 LLM rerank。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "多个候选分数接近或结构不确定",
+      "noConfiguration": false,
+      "expected": "只把 Top N 候选窗口交给 LLM rerank；仍不确定则 needs_review。"
+    },
+    {
+      "edition": "community",
+      "scenario": "用户在样例制作中人工选择候选",
+      "noConfiguration": true,
+      "expected": "应用资产保存 confirmedEvidenceHints/selectedWindow/derivedTerms；后续新文档重新扫描信号，不复用旧节点 ID。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "候选包含 raw HTML 或 inline base64 图片",
+      "noConfiguration": true,
+      "expected": "API 和前端主展示使用命中窗口摘要或行列数，不把 raw HTML/base64 当候选主展示内容。"
+    }
+  ],
+  "dataIntegrity": "不删除 OCR、文档树、表格、证据或运行 artifact；新增字段只补充候选解释、定位信号和人工确认画像。",
+  "implementationBoundary": "共享定位服务、样例制作接口、应用资产协议和前端候选展示；商业私有长文档执行可复用该协议，但不得复制一套业务硬编码定位链路。",
+  "coreReuse": "shared_core"
+}

@@ -1,0 +1,53 @@
+TechFlag IDP Community
+======================
+
+Copyright (c) 2026 TechFlag.
+
+This product includes original source code, documentation, user interface
+design, workflow design, prompt/workbench design, and release packaging created
+by TechFlag.
+
+Project Identity
+----------------
+
+TechFlag IDP Community is the open-source community edition of TechFlag's
+intelligent document processing workbench. It is designed for local-first
+document AI workflows, including OCR integration, document tree inspection,
+evidence-grounded extraction, and reusable document application experiments.
+
+License
+-------
+
+The GitHub community snapshot of this repository is distributed under the MIT
+License. The full license text is provided in `LICENSE`.
+
+This NOTICE file preserves project identity, attribution, and redistribution
+guidance. It does not replace the MIT license text.
+
+Third-Party Components
+----------------------
+
+This project may depend on third-party open-source libraries, frameworks, OCR
+providers, model providers, package managers, and build tools. Those components
+remain governed by their own licenses and notices.
+
+Trademark and Branding
+----------------------
+
+The names TechFlag, TechFlag IDP, and 旗讯OCR智能文档处理平台 identify software,
+documentation, workflows, and user interface assets created and maintained by
+TechFlag.
+
+The MIT license grants broad rights to use, modify, and distribute the code.
+It does not grant permission to imply that modified versions are official
+TechFlag releases, endorsed by TechFlag, or operated by TechFlag.
+
+See `TRADEMARKS.md` for usage guidance.
+
+Attribution Preservation
+------------------------
+
+Please preserve copyright notices, SPDX headers, this `NOTICE` file,
+`AUTHORS`, `TRADEMARKS.md`, and other attribution notices when copying,
+modifying, or redistributing this project, to the extent required by applicable
+license terms and distribution context.

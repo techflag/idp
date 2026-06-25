@@ -1,0 +1,125 @@
+{
+  "edition": "community",
+  "capabilityRegistryVersion": "2026-06-21.v1",
+  "capabilities": [
+    {
+      "key": "document.parse",
+      "label": "文档解析",
+      "level": "limited",
+      "executionMode": "single_page_lite",
+      "implementation": "shared_core",
+      "enabled": false,
+      "requiresConfiguration": true,
+      "providerKeys": ["mineru"],
+      "limitKeys": ["maxPagesPerRun", "longDocument"],
+      "communityBoundary": "MinerU 可配置，社区仓库保留单页/基础解析体验。",
+      "commercialBoundary": "商业版可提供托管解析、长文档和批量解析。",
+      "noConfigurationBehavior": "缺少 MinerU Token 时提示申请链接 https://mineru.net/?source=github，不进入 pending。"
+    },
+    {
+      "key": "llm.extract",
+      "label": "AI 抽取",
+      "level": "basic",
+      "executionMode": "basic_byo_llm",
+      "implementation": "shared_core",
+      "enabled": false,
+      "requiresConfiguration": true,
+      "providerKeys": ["llm.dashscope"],
+      "limitKeys": [],
+      "communityBoundary": "社区版使用 BYO OpenAI-compatible 模型，缺少 Key 时可浏览样例。",
+      "commercialBoundary": "商业版可提供托管模型、成本控制和企业模型治理。",
+      "noConfigurationBehavior": "缺少 LLM Key 时提示 BYO Model 配置，不发起真实抽取。"
+    },
+    {
+      "key": "document.longRun",
+      "label": "长文档运行",
+      "level": "unavailable",
+      "executionMode": "stub_only",
+      "implementation": "public_stub",
+      "enabled": false,
+      "requiresConfiguration": false,
+      "providerKeys": ["mineru", "llm.dashscope"],
+      "limitKeys": ["maxPagesPerRun", "longDocument"],
+      "communityBoundary": "社区仓库不包含完整长文档执行器、跨页计划器或商业恢复链路；公开体验只保留单页/基础流程。",
+      "commercialBoundary": "跨页证据索引、长文档队列、长表格复核、完整审计和失败恢复属于商业私有扩展。"
+    },
+    {
+      "key": "application.authoring",
+      "label": "文档应用制作",
+      "level": "limited",
+      "executionMode": "single_page_lite_authoring",
+      "implementation": "public_lite_or_stub",
+      "enabled": false,
+      "requiresConfiguration": true,
+      "providerKeys": ["mineru", "llm.dashscope"],
+      "limitKeys": ["longDocument"],
+      "communityBoundary": "社区版只开放单页 Lite 应用体验；完整工作坊、步骤编排、样板固化、发布和应用市场属于商业完整链路。",
+      "commercialBoundary": "商业版提供完整文档应用制作、步骤编排、样板资产固化、发布和版本管理。",
+      "noConfigurationBehavior": "缺少 provider 配置时展示配置提示；社区版不得启动完整应用制作或发布链路。"
+    },
+    {
+      "key": "application.run",
+      "label": "文档应用运行",
+      "level": "limited",
+      "executionMode": "single_page_lite_run",
+      "implementation": "public_lite_or_stub",
+      "enabled": false,
+      "requiresConfiguration": true,
+      "providerKeys": ["mineru", "llm.dashscope"],
+      "limitKeys": ["longDocument", "batchRun"],
+      "communityBoundary": "社区版只允许单页 Lite 或样例运行；完整文档应用运行、跨页定位、长文档执行和商业恢复链路不进入社区仓库。",
+      "commercialBoundary": "商业版提供应用运行、跨页证据定位、多步骤执行、失败恢复和审计。",
+      "noConfigurationBehavior": "缺少 provider 配置时展示配置提示；社区版不得启动完整应用运行链路。"
+    },
+    {
+      "key": "skill.prototypeOptimization",
+      "label": "Skill 候选优化",
+      "level": "unavailable",
+      "executionMode": "stub_only",
+      "implementation": "public_stub",
+      "enabled": false,
+      "requiresConfiguration": false,
+      "providerKeys": ["llm.dashscope"],
+      "limitKeys": [],
+      "communityBoundary": "社区版不暴露抽取反推 Skill、SkillOpt、SkillNet 候选优化链路；公开体验以手工确认和样例试跑为准。",
+      "commercialBoundary": "商业版或内部版本可启用候选优化、训练评测、发布门禁和私有 SkillNet 流程。",
+      "noConfigurationBehavior": "社区版隐藏入口或返回 stub；商业版未配置模型提供方时不得启动会长期 pending 的候选优化任务。"
+    }
+  ],
+  "limits": [
+    {
+      "key": "maxPagesPerRun",
+      "value": 1,
+      "unit": "page",
+      "message": "社区版每次运行只能选择 1 页，不能静默截断整份文档。"
+    },
+    {
+      "key": "longDocument",
+      "value": "not_shipped",
+      "unit": null,
+      "message": "社区仓库不包含完整长文档链路；公开体验只保留单页/基础流程。"
+    }
+  ],
+  "providers": [
+    {
+      "key": "mineru",
+      "label": "MinerU Document Parser",
+      "status": "not_configured",
+      "required": true,
+      "envVars": ["MINERU_TOKEN"],
+      "applyUrl": "https://mineru.net/?source=github",
+      "docsUrl": null,
+      "message": "未配置 MinerU Token，请先申请并配置后再发起真实解析。"
+    },
+    {
+      "key": "llm.dashscope",
+      "label": "OpenAI-compatible LLM",
+      "status": "not_configured",
+      "required": true,
+      "envVars": ["DASHSCOPE_API_KEY"],
+      "applyUrl": null,
+      "docsUrl": null,
+      "message": "未配置 LLM Key，可浏览样例；真实 AI 抽取需要配置 BYO Model。"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "FD-2026-06-21-OPEN-SOURCE-DUAL-PUBLISH",
+  "featureName": "GitHub 与 Gitee 社区版双开源发布",
+  "applicableEdition": "community",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "社区版通过 sanitized snapshot 同步发布到 GitHub 和 Gitee；GitHub 默认英文 README，Gitee 默认中文 README。"
+  },
+  "commercial": {
+    "capabilityLevel": "unavailable",
+    "behavior": "商业版实现、内部文档、私有样例、生产配置和密钥不进入公开 snapshot。"
+  },
+  "capabilityKeys": [
+    "document.parse"
+  ],
+  "providers": [
+    {
+      "key": "git.github",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "没有 GitHub 凭据时只生成并校验 GitHub export，不执行 push。"
+    },
+    {
+      "key": "git.gitee",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "没有 Gitee 凭据时只生成并校验 Gitee export，不执行 push。"
+    }
+  ],
+  "noConfigurationBehavior": "使用 --no-push 生成两个公开导出目录并输出后续 release 命令。",
+  "frontendEntryControl": "不新增前端入口；只新增公开 README 截图和发布文档。",
+  "backendPolicy": "不改运行时 API；发布脚本必须跑公开导出检查并阻断密钥、运行产物、商业实现和内部资料。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "zh_cn_en",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "生成 GitHub export",
+      "noConfiguration": true,
+      "expected": "README.md 为英文，README.zh-CN.md 为中文，公开检查通过。"
+    },
+    {
+      "edition": "community",
+      "scenario": "生成 Gitee export",
+      "noConfiguration": true,
+      "expected": "README.md 为中文，README.en-US.md 为英文，公开检查通过。"
+    }
+  ],
+  "dataIntegrity": "不复用运行过的 export 目录；每次发布前重新导出并清理 .env.local、.runtime、SQLite、node_modules、dist、__pycache__ 和 tsbuildinfo。",
+  "implementationBoundary": "脚本只操作社区公开 snapshot，不改变开发仓库 origin，不使用或保存个人访问令牌。",
+  "coreReuse": "shared_core"
+}

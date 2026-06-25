@@ -1,0 +1,74 @@
+{
+  "id": "FD-2026-06-22-DESKTOP-IDP-AGENT-CONVERSATION-WORKBENCH",
+  "featureName": "桌面 IDP Agent 对话工作台",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "limited",
+    "behavior": "社区版桌面端可以连接用户自行部署的社区后端，使用可用的公开/基础 IDP Agent 处理文档；当 application.run 或 document.parse 不可用、缺少解析 provider、后端未配置或登录失效时，客户端必须显示明确配置或能力提示，不创建无限 pending 运行。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版桌面端连接商业 IDP 后端，保留 AionUi 左侧历史与中间对话框交互，将 published application 展示为业务 Agent，通过 slash 命令或上传后推荐触发文档上传、解析、应用运行、轻量状态轮询、结果查看和复核反馈。"
+  },
+  "capabilityKeys": [
+    "application.run",
+    "document.parse"
+  ],
+  "providers": [
+    {
+      "key": "idp.backend",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "未配置后端地址或登录会话失效时，客户端在对话区显示系统配置/登录提示，不创建本地 pending run。"
+    },
+    {
+      "key": "mineru",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "由后端返回 document.parse provider 配置错误；客户端展示错误并保留当前对话上下文。"
+    },
+    {
+      "key": "llm",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "由后端返回 application.run 或 LLM 配置错误；客户端展示失败原因，不自行重试长任务。"
+    }
+  ],
+  "noConfigurationBehavior": "客户端只作为现有 IDP 后端 workflow 的对话入口；后端地址、认证、解析 provider 或 LLM provider 缺失时必须以明确错误结束，不在本地启动替代解析链路。",
+  "frontendEntryControl": "AionUi 桌面壳默认入口改为 IDP Agent 对话工作台：左侧保留历史记录，中间保留对话框；slash 命令源来自 IDP published applications。设置区原“助手”主入口改造为“应用”，作为 IDP published/draft applications 的统一查看和调用入口；首页默认输入框下方应用卡片、后续 slash 命令和其他入口应复用同一 IDP 应用列表服务。发送框中匹配到 /应用 且已附加文件时，默认拦截 Aion CLI 会话创建，先创建 IDP 处理会话并跳转到 /conversation/:id；会话页按 PC 工作台同款链路展示上传/OCR、解析轮询、应用定位计划、确认运行、application run 轮询和终态结果，避免首页发送按钮承担长流程 loading。进入运行态后必须保留 AionUi 三栏骨架：左侧对话与 Steps，中央原文/OCR/结构化结果复核区，右侧 Workspace 文件与变更列表；主列与原文/结果复核列应支持拖拽调整宽度，宽表格内容必须在结果区内横向滚动，不能挤压或截断审核信息。订单信息提取、商品信息提取等步骤结果必须以可审核字段/表格展示，并能关联原文证据。未匹配 IDP 应用的输入仍保留原 AionUi 会话路径。模型平台/API Key 配置、Skills Hub 和 Cron 保留在设置/工具区，WebUI、远程 channel、上游反馈和 GitHub Release 入口不作为主流程入口。",
+  "backendPolicy": "不新增旁路业务 API，优先复用 /auth、/customers、/customers/{customerId}/documents/upload-and-parse、/tasks/{taskId}/parse/poll、/applications/{applicationId}/runs/plan、/applications/{applicationId}/runs、/applications/runs/{runId}、/tasks/{taskId}/prompt-runs/{runId} 和 review-feedback；文档解析状态通过 parse poll 轻量轮询，应用 pending/running 状态轮询使用 includeFinalOutput=false 的轻量 application run detail，终态再拉取 includeFinalOutput=true 或按需读取 prompt run 详情；completed/needs_review 的结构化结果必须从 run artifact 或本地 outputPath 兜底恢复，不能只返回 outputSummary，保持原始 OCR、表格、文档树和证据资产由后端保存。 文档树 artifact 生命周期由后端共享 ensure_document_tree 链路统一负责：上传解析完成、Workbench 任务详情/文档树读取、应用运行计划前都只从既有 OCR rawJson 或 bundle 生成中立 document_tree/tree.json、modules.json 和 dispatch_plan.json；不得在文档树生成中写入业务字段硬编码或表格专用优先级。record_collection 的运行证据必须优先使用 skill/runtimeContract 命中的结构化 facts/tableGrid 行；selectedSourceText 或 markdown 渲染仅作为无结构块兜底和审计展示，不能用被截断的 markdown 代替可抽取结构行。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "zh_cn_en",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "社区后端未配置解析 provider",
+      "noConfiguration": true,
+      "expected": "桌面端上传或运行后显示后端返回的 provider 配置错误或 failed 状态，不无限 pending，不删除原始上传文件。"
+    },
+    {
+      "edition": "community",
+      "scenario": "社区后端具备基础应用运行能力",
+      "noConfiguration": false,
+      "expected": "slash 命令可列出后端返回的可用 Agent，上传单个文件后先展示解析/OCR 状态；解析完成后按计划接口判断是否可自动执行或需要人工确认。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "商业后端完整配置",
+      "noConfiguration": false,
+      "expected": "可登录、选择客户、通过 slash 或上传后推荐选择 Agent，上传文件后看到解析、定位计划、确认运行、应用运行进度，完成后在复核区展示 finalOutput、订单字段、商品明细和证据引用，而不是只显示步骤摘要。"
+    },
+    {
+      "edition": "both",
+      "scenario": "文档树生成链路一致性",
+      "noConfiguration": false,
+      "expected": "上传解析完成后、打开 Workbench 详情和应用运行计划前均通过同一后端 ensure 链路加载或生成 document_tree；parse_job rawJsonPath 丢失但 bundle 存在时仍可生成树；生成逻辑保持中立结构事实，不包含业务词表或表格专用规则。"
+    },
+    {
+      "edition": "both",
+      "scenario": "record_collection 命中结构化证据",
+      "noConfiguration": false,
+      "expected": "当 skill/runtimeContract 命中文档树结构块且 facts 中存在 tableGrid 时，模型输入和本地记录构建使用完整结构行；即使 selectedSourceText/markdown 预览被截断或包含省略提示，也不能导致记录集合少行。"
+    }
+  ],
+  "dataIntegrity": "客户端不得裁剪、删除或本地改写 OCR、表格、文档树、证据或应用运行结果；所有事实资产以 IDP 后端为准，复核只通过 review-feedback 写入修正输出与证据引用。",
+  "implementationBoundary": "桌面端复用 AionUi 桌面壳、历史/对话框骨架、Office preview 能力、模型配置、Skills Hub 和 Cron；IDP Agent 运行必须走后端 capability/stub 控制，不把商业完整链路复制进客户端或社区导出。",
+  "coreReuse": "shared_core"
+}

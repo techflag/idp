@@ -1,0 +1,61 @@
+{
+  "id": "FD-2026-06-21-MINERU-SUBMIT-ERROR-AND-PUBLIC-FILE-URL",
+  "featureName": "MinerU 提交失败与本地文件 URL 可访问性处理",
+  "applicableEdition": "both",
+  "community": {
+    "capabilityLevel": "limited",
+    "behavior": "社区版允许本地存储上传并保留原文件预览；配置 MINERU_TOKEN 后，如果上传文件仍是本地相对地址或 localhost 地址，不向云端 MinerU 提交无效请求，而是将解析状态明确标记为 failed，并提示配置 OSS 或 BACKEND_PUBLIC_BASE_URL。"
+  },
+  "commercial": {
+    "capabilityLevel": "full",
+    "behavior": "商业版可通过 OSS、托管存储、私有 parser 或受控代理保证解析服务可访问文件。共享 MinerU provider 仍必须把 provider 返回的错误 JSON 转为可读失败状态，不允许 KeyError/500 泄漏到用户侧。"
+  },
+  "capabilityKeys": [
+    "document.parse"
+  ],
+  "providers": [
+    {
+      "key": "mineru",
+      "configurationState": "configured",
+      "noConfigurationBehavior": "Token 配置存在但文件 URL 不可被云端访问时，解析失败并提示配置 OSS 或 BACKEND_PUBLIC_BASE_URL；MinerU 返回错误码或缺少 task_id 时展示 provider 错误信息。"
+    },
+    {
+      "key": "storage.local",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "本地存储保证上传文件可见，但默认不保证云端 parser 可访问；需要公网后端地址或 OSS 才能真实解析。"
+    },
+    {
+      "key": "storage.oss",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "配置 OSS 后，上传文件生成外部可访问 URL，可继续走 MinerU 真实解析。"
+    }
+  ],
+  "noConfigurationBehavior": "缺少公网可访问文件 URL 时，上传、任务和原文预览保持可用；OCR、文档树和结构化内容不可用，parse 状态以 failed 结束，不进入 pending。",
+  "frontendEntryControl": "前端不判断社区/商业版本，只根据 parse 状态展示原文、失败原因和重新识别按钮；错误信息来自后端 provider/policy 层。",
+  "backendPolicy": "ParsePipelineService 在提交 MinerU 前校验 sourceUrl 必须是可被云端访问的 http/https URL；MinerU 客户端校验 code/data/task_id 并把错误响应转为 MineruProviderError；start_parse 捕获配置错误和 provider 错误并持久化 failed 状态。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "legacy_zh",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "配置 MINERU_TOKEN 但使用默认本地对象存储上传 PDF",
+      "noConfiguration": true,
+      "expected": "上传文件可见，parseState=failed，错误信息提示 OSS 或 BACKEND_PUBLIC_BASE_URL，poll 不返回 502/500。"
+    },
+    {
+      "edition": "community",
+      "scenario": "配置 BACKEND_PUBLIC_BASE_URL 后本地对象 URL 变为公网绝对地址",
+      "noConfiguration": false,
+      "expected": "LocalObjectStorageService 生成 https 公网对象 URL，可继续提交 MinerU。"
+    },
+    {
+      "edition": "commercial",
+      "scenario": "MinerU 或商业 parser 返回错误 JSON 或缺少 task_id",
+      "noConfiguration": false,
+      "expected": "共享 provider 层返回可读失败状态，任务不进入长期 pending，也不抛 KeyError/500。"
+    }
+  ],
+  "dataIntegrity": "不删除原始上传文件、OCR artifact、表格、文档树或证据；本修复只改变提交前校验、provider 错误解析和失败状态持久化。",
+  "implementationBoundary": "共享 core 负责 URL 可访问性校验、provider 响应校验和失败状态；商业完整长文档链路、托管存储和私有 parser 仍通过私有 provider/extension 提供。",
+  "coreReuse": "shared_core"
+}

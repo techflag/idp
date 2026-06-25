@@ -1,0 +1,45 @@
+{
+  "id": "FD-2026-06-25-GITHUB-COMMUNITY-MIT-LICENSE",
+  "featureName": "GitHub 社区快照 MIT 许可证导出与发布",
+  "applicableEdition": "community",
+  "community": {
+    "capabilityLevel": "basic",
+    "behavior": "GitHub 社区版通过 sanitized snapshot 导出，并在导出目录内统一使用 MIT LICENSE、MIT SPDX 文件头和配套 NOTICE/README 元数据。"
+  },
+  "commercial": {
+    "capabilityLevel": "unavailable",
+    "behavior": "商业实现、内部文档、私有样例和开发主仓内部发布策略不因 GitHub 社区快照的 MIT 导出而放宽。"
+  },
+  "capabilityKeys": [
+    "audit.compliance"
+  ],
+  "providers": [
+    {
+      "key": "git.github",
+      "configurationState": "optional",
+      "noConfigurationBehavior": "没有 GitHub 凭据时仍可导出、校验并生成 MIT 社区快照，但不执行 push。"
+    }
+  ],
+  "noConfigurationBehavior": "本地可直接生成 MIT 社区快照并运行公开导出检查，无需云端 provider 或外部密钥。",
+  "frontendEntryControl": "不新增前端入口；只更新社区导出产物中的 README 和包元数据。",
+  "backendPolicy": "开发主仓继续沿用现有源码归属与边界护栏；MIT 仅在 GitHub 社区 snapshot 导出目录内生效，导出时同步替换 LICENSE、NOTICE、README、包元数据和 SPDX 文件头。",
+  "databaseMigrationImpact": "none",
+  "i18nScope": "zh_cn_en",
+  "testMatrix": [
+    {
+      "edition": "community",
+      "scenario": "生成 GitHub 社区 MIT 快照",
+      "noConfiguration": true,
+      "expected": "导出目录顶层 LICENSE 为 MIT，README/README.zh-CN 显示 MIT，源码 SPDX 为 MIT，公开导出检查通过。"
+    },
+    {
+      "edition": "community",
+      "scenario": "执行 GitHub 社区发布脚本但跳过 push",
+      "noConfiguration": true,
+      "expected": "可完成 snapshot 导出、guardrail 校验、本地 git 快照准备，并提示后续 push 或 release 操作。"
+    }
+  ],
+  "dataIntegrity": "只修改社区发布快照的许可证与发布元数据，不修改运行数据、数据库、文档树、OCR、证据、结果或商业边界 stub。",
+  "implementationBoundary": "MIT 改动仅作用于 GitHub 社区公开快照和其发布脚本，不直接改写开发主仓的内部许可证文本和商业实现边界。",
+  "coreReuse": "shared_core"
+}
